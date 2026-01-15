@@ -34,4 +34,13 @@ public class Document {
     protected void onCreate() {
         this.uploadedAt = LocalDateTime.now();
     }
+
+    // 1. Liên kết N-1 với Folder (Nhiều file thuộc 1 thư mục)
+    @ManyToOne
+    @JoinColumn(name = "folder_id") // Tên cột khóa ngoại trong bảng documents
+    private Folder folder;
+
+    // 2. Liên kết 1-1 với Content (1 file có 1 nội dung)
+    @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private DocumentContent content;
 }

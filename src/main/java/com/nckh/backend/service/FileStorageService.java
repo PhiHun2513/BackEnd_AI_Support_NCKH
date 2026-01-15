@@ -2,7 +2,9 @@ package com.nckh.backend.service;
 
 import com.nckh.backend.dto.DocumentResponse;
 import com.nckh.backend.entity.Document;
+import com.nckh.backend.entity.Folder;
 import com.nckh.backend.repository.DocumentRepository;
+import com.nckh.backend.repository.FolderRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class FileStorageService {
 
     private final DocumentRepository documentRepository;
+    private final FolderRepository folderRepository; // Đã thêm Repository này
     private final Path fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
 
     @PostConstruct
@@ -30,29 +33,46 @@ public class FileStorageService {
         }
     }
 
-    public DocumentResponse storeFile(MultipartFile file) {
-        // Làm sạch tên file để tránh lỗi đường dẫn
+    /**
+     * Lưu file vào ổ cứng và lưu thông tin vào Database.
+     * @param file File từ người dùng gửi lên.
+     * @param folderId ID của thư mục (có thể null nếu không chọn thư mục).
+     */
+    public DocumentResponse storeFile(MultipartFile file, Long folderId) {
+        // 1. Làm sạch tên file
         String originalFileName = file.getOriginalFilename();
-        if(originalFileName == null) originalFileName = "unknown_file";
+        if (originalFileName == null) originalFileName = "unknown_file";
+
+        // Tạo tên file duy nhất để tránh trùng lặp (dùng thời gian hệ thống)
         String fileName = System.currentTimeMillis() + "_" + originalFileName;
 
         try {
+            // 2. Lưu file vật lý vào ổ cứng
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-            Document doc = Document.builder()
+            // 3. Chuẩn bị đối tượng Document (Builder Pattern)
+            var docBuilder = Document.builder()
                     .fileName(originalFileName)
                     .fileType(file.getContentType())
                     .filePath(targetLocation.toString())
-                    .fileSize(file.getSize())
-                    .build();
+                    .fileSize(file.getSize());
 
-            Document savedDoc = documentRepository.save(doc);
+            // 4. Xử lý Logic gán Folder (Nếu người dùng có chọn)
+            if (folderId != null) {
+                Folder folder = folderRepository.findById(folderId)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy Folder với ID: " + folderId));
+                docBuilder.folder(folder);
+            }
 
+            // 5. Lưu vào Database
+            Document savedDoc = documentRepository.save(docBuilder.build());
+
+            // 6. Trả về kết quả DTO
             return mapToDTO(savedDoc);
 
         } catch (IOException ex) {
-            throw new RuntimeException("Không thể lưu file " + fileName, ex);
+            throw new RuntimeException("Không thể lưu file " + fileName + ". Vui lòng thử lại!", ex);
         }
     }
 
@@ -62,7 +82,9 @@ public class FileStorageService {
                 .collect(Collectors.toList());
     }
 
+    // Hàm chuyển đổi từ Entity sang DTO để trả về cho Frontend
     private DocumentResponse mapToDTO(Document doc) {
+        // Tạo link download (nếu sau này cần tính năng tải xuống)
         String downloadUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/documents/download/")
                 .path(doc.getId().toString())
@@ -73,7 +95,7 @@ public class FileStorageService {
                 .fileName(doc.getFileName())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())
-                .uploadTime(doc.getUploadedAt())
+                .uploadTime(doc.getUploadedAt()) // Đảm bảo Entity Document đã có getter này
                 .downloadUrl(downloadUrl)
                 .build();
     }
