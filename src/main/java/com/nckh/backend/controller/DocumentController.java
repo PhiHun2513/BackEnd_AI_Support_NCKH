@@ -1,55 +1,56 @@
 package com.nckh.backend.controller;
 
-import com.nckh.backend.dto.DocumentResponse;
 import com.nckh.backend.entity.Document;
-import com.nckh.backend.repository.DocumentRepository;
-import com.nckh.backend.service.FileStorageService;
+import com.nckh.backend.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+@CrossOrigin(origins = "*")
 public class DocumentController {
 
-    private final FileStorageService fileStorageService;
-    private final DocumentRepository documentRepository;
+    private final DocumentService documentService;
 
+    // POST: http://localhost:8080/api/documents/upload
     @PostMapping("/upload")
-    public ResponseEntity<DocumentResponse> uploadFile(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "folderId", required = false) Long folderId) {
-
-        return ResponseEntity.ok(fileStorageService.storeFile(file, folderId));
+    public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file,
+                                    @RequestParam("folderId") Long folderId,
+                                    @RequestParam("extractedText") String extractedText) {
+        try {
+            Document doc = documentService.uploadFile(file, folderId, extractedText);
+            return ResponseEntity.ok(doc);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    @GetMapping
-    public ResponseEntity<List<DocumentResponse>> getAllFiles() {
-        return ResponseEntity.ok(fileStorageService.getAllFiles());
-    }
-    // API: Lấy danh sách file thuộc về một Folder cụ thể
-    // GET: http://localhost:8080/api/documents/folder/1
+    // GET: http://localhost:8080/api/documents/folder/{folderId}
     @GetMapping("/folder/{folderId}")
-    public ResponseEntity<List<DocumentResponse>> getFilesByFolder(@PathVariable Long folderId) {
-        // 1. Gọi Repository tìm file theo ID thư mục
-        List<Document> docs = documentRepository.findByFolderId(folderId);
+    public ResponseEntity<List<Document>> getDocuments(@PathVariable Long folderId) {
+        return ResponseEntity.ok(documentService.getDocumentsByFolder(folderId));
+    }
 
-        // 2. Chuyển đổi sang dạng DTO để trả về
-        List<DocumentResponse> responses = docs.stream()
-                .map(doc -> DocumentResponse.builder()
-                        .id(doc.getId())
-                        .fileName(doc.getFileName())
-                        .fileType(doc.getFileType())
-                        .fileSize(doc.getFileSize())
-                        .uploadTime(doc.getUploadedAt())
-                        // Nếu cần downloadUrl thì có thể map thêm ở đây
-                        .build())
-                .toList();
+    // GET: http://localhost:8080/api/documents/folder/{folderId}/context
+    @GetMapping("/folder/{folderId}/context")
+    public ResponseEntity<String> getFolderContext(@PathVariable Long folderId) {
+        return ResponseEntity.ok(documentService.getFolderContext(folderId));
+    }
 
-        return ResponseEntity.ok(responses);
+
+    // DELETE: http://localhost:8080/api/documents/{id}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        try {
+            documentService.deleteDocument(id);
+            return ResponseEntity.ok("Xóa thành công!");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

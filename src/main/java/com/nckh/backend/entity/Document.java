@@ -1,5 +1,6 @@
 package com.nckh.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore; // <--- 1. Bổ sung thư viện này
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -7,40 +8,37 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "documents")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Document {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "file_name", nullable = false)
     private String fileName;
 
-    @Column(nullable = false)
+    @Column(name = "file_type")
     private String fileType;
 
-    @Column(nullable = false)
-    private String filePath;
-
+    @Column(name = "file_size")
     private Long fileSize;
 
+    @Column(name = "file_path")
+    private String filePath;
 
-    @Column(nullable = false)
-    private LocalDateTime uploadedAt;
+    @Column(name = "upload_time")
+    private LocalDateTime uploadTime;
 
-    @PrePersist
-    protected void onCreate() {
-        this.uploadedAt = LocalDateTime.now();
-    }
 
-    // 1. Liên kết N-1 với Folder (Nhiều file thuộc 1 thư mục)
-    @ManyToOne
-    @JoinColumn(name = "folder_id") // Tên cột khóa ngoại trong bảng documents
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id")
+    @JsonIgnore
     private Folder folder;
 
-    // 2. Liên kết 1-1 với Content (1 file có 1 nội dung)
     @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private DocumentContent content;
+    @JsonIgnore
+    private DocumentContent documentContent;
 }

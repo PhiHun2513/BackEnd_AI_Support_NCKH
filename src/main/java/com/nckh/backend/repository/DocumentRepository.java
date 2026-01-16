@@ -8,5 +8,8 @@ import java.util.List;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long> {
+    boolean existsByFolderIdAndFileName(Long folderId, String fileName);
     List<Document> findByFolderId(Long folderId);
+
+
 }
