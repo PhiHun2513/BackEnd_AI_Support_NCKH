@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,12 +43,12 @@ public class DocumentService {
         doc.setFileType(file.getContentType());
         doc.setFileSize(file.getSize());
         doc.setUploadTime(LocalDateTime.now());
-        doc.setFilePath(savedFilePath); // Lưu đường dẫn nhận được
+        doc.setFilePath(savedFilePath);
         doc.setFolder(folder);
 
         // Lưu nội dung text
         DocumentContent content = new DocumentContent();
-        content.setExtractedText(extractedText); // Dùng extractedText (đúng tên)
+        content.setExtractedText(extractedText);
         content.setDocument(doc);
         doc.setDocumentContent(content);
 
@@ -58,10 +59,7 @@ public class DocumentService {
     public void deleteDocument(Long documentId) {
         Document doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new RuntimeException("File không tồn tại!"));
-
-        // Xóa vật lý trước
         fileStorageService.deleteFileFromDisk(doc.getFilePath());
-        // Xóa DB sau
         documentRepository.delete(doc);
     }
 
@@ -75,5 +73,20 @@ public class DocumentService {
         return docs.stream()
                 .map(doc -> doc.getDocumentContent() != null ? doc.getDocumentContent().getExtractedText() : "")
                 .collect(Collectors.joining("\n\n"));
+    }
+    // DOWNLOAD
+    public Document getDocumentById(Long docId) {
+        return documentRepository.findById(docId)
+                .orElseThrow(() -> new RuntimeException("File không tồn tại"));
+    }
+
+    public Resource loadDocumentAsResource(Long docId) {
+        Document doc = getDocumentById(docId);
+        return fileStorageService.loadFileAsResource(doc.getFilePath());
+    }
+
+    // LẤY TẤT CẢ FILE CHO ADMIN
+    public List<Document> getAllDocumentsAdmin() {
+        return documentRepository.findAll();
     }
 }

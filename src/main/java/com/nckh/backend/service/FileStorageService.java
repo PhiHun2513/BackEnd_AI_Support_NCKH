@@ -2,6 +2,9 @@ package com.nckh.backend.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import java.net.MalformedURLException;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -20,7 +23,6 @@ public class FileStorageService {
         }
     }
 
-    // Chỉ nhận file và trả về đường dẫn, không dùng Document Entity
     public String storeFileToDisk(MultipartFile file) {
         String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
         try {
@@ -38,6 +40,19 @@ public class FileStorageService {
             Files.deleteIfExists(Paths.get(filePath));
         } catch (IOException ex) {
             System.err.println("Không xóa được file vật lý: " + filePath);
+        }
+    }
+    public Resource loadFileAsResource(String filePath) {
+        try {
+            Path filePathObj = Paths.get(filePath);
+            Resource resource = new UrlResource(filePathObj.toUri());
+            if(resource.exists()) {
+                return resource;
+            } else {
+                throw new RuntimeException("File không tìm thấy: " + filePath);
+            }
+        } catch (MalformedURLException ex) {
+            throw new RuntimeException("File không tìm thấy: " + filePath, ex);
         }
     }
 }

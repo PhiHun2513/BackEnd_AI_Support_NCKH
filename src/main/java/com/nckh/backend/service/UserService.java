@@ -1,3 +1,4 @@
+// File: src/main/java/com/nckh/backend/service/UserService.java
 package com.nckh.backend.service;
 
 import com.nckh.backend.entity.User;
@@ -15,10 +16,20 @@ public class UserService {
         if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Tên đăng nhập đã tồn tại!");
         }
+
+        String assignedRole = "USER";
+        if (userRepository.count() == 0) {
+            assignedRole = "ADMIN";
+            System.out.println(">>> KHỞI TẠO: Tài khoản '" + username + "' là ADMIN hệ thống.");
+        }
+
+
         User newUser = User.builder()
                 .username(username)
                 .password(password)
+                .role(assignedRole)
                 .build();
+
         return userRepository.save(newUser);
     }
 

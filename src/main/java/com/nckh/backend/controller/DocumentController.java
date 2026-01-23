@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 
@@ -52,5 +55,19 @@ public class DocumentController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+    // GET: http://localhost:8080/api/documents/admin/all
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<Document>> getAllDocumentsForAdmin() {
+        return ResponseEntity.ok(documentService.getAllDocumentsAdmin());
+    }
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long id) {
+        Document doc = documentService.getDocumentById(id);
+        Resource resource = documentService.loadDocumentAsResource(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + doc.getFileName() + "\"")
+                .body(resource);
     }
 }

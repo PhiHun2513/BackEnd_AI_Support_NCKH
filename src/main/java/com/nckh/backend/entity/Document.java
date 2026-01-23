@@ -33,9 +33,8 @@ public class Document {
     private LocalDateTime uploadTime;
 
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "folder_id")
-    @JsonIgnore
     private Folder folder;
 
     @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
