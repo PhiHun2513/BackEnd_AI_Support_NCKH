@@ -25,7 +25,6 @@ public class DocumentService {
 
     @Transactional
     public Document uploadFile(MultipartFile file, Long folderId, String extractedText) {
-        //  Kiểm tra trùng
         if (documentRepository.existsByFolderIdAndFileName(folderId, file.getOriginalFilename())) {
             throw new RuntimeException("File đã tồn tại!");
         }
@@ -33,10 +32,8 @@ public class DocumentService {
         // Tìm Folder
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Folder ID: " + folderId));
-
         //Gọi Thủ kho lưu file ra ổ cứng -> Lấy đường dẫn
         String savedFilePath = fileStorageService.storeFileToDisk(file);
-
         // Lưu thông tin vào Database
         Document doc = new Document();
         doc.setFileName(file.getOriginalFilename());
@@ -45,13 +42,11 @@ public class DocumentService {
         doc.setUploadTime(LocalDateTime.now());
         doc.setFilePath(savedFilePath);
         doc.setFolder(folder);
-
         // Lưu nội dung text
         DocumentContent content = new DocumentContent();
         content.setExtractedText(extractedText);
         content.setDocument(doc);
         doc.setDocumentContent(content);
-
         return documentRepository.save(doc);
     }
 
