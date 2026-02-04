@@ -23,6 +23,10 @@ public class ChatMessage {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String optimizedPrompt;
+
     private LocalDateTime timestamp;
 
     @PrePersist
@@ -34,4 +38,5 @@ public class ChatMessage {
     @JoinColumn(name = "session_id")
     @JsonIgnore
     private ChatSession chatSession;
+
 }

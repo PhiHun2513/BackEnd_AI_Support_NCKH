@@ -37,12 +37,13 @@ public class ChatService {
     }
 
     //  Lưu tin nhắn mới
-    public void saveMessage(Long folderId, String role, String content) {
+    public void saveMessage(Long folderId, String role, String content, String optimizedPrompt) {
         ChatSession session = getOrCreateSession(folderId);
 
         ChatMessage message = ChatMessage.builder()
                 .role(role)
                 .content(content)
+                .optimizedPrompt(optimizedPrompt)
                 .chatSession(session)
                 .build();
         messageRepository.save(message);

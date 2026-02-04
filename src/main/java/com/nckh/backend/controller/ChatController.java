@@ -22,12 +22,13 @@ public class ChatController {
         private Long folderId;
         private String role;
         private String content;
+        private String optimizedPrompt;
     }
 
     // API: Lưu tin nhắn (Python gọi sau khi user hỏi hoặc AI trả lời)
     @PostMapping("/save")
     public ResponseEntity<?> saveMessage(@RequestBody MessageRequest request) {
-        chatService.saveMessage(request.getFolderId(), request.getRole(), request.getContent());
+        chatService.saveMessage(request.getFolderId(), request.getRole(), request.getContent(), request.getOptimizedPrompt());
         return ResponseEntity.ok("Đã lưu tin nhắn");
     }
 
@@ -36,4 +37,6 @@ public class ChatController {
     public ResponseEntity<List<ChatMessage>> getHistory(@PathVariable Long folderId) {
         return ResponseEntity.ok(chatService.getHistory(folderId));
     }
+
+
 }
